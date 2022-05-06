@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useReducer } from 'react'
 import { Todo } from '../model'
 import { AiFillEdit, AiFillDelete } from 'react-icons/ai'
 import { MdDone } from 'react-icons/md'
@@ -10,13 +10,20 @@ type Props = {
     setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
 }
 
+type Actions =
+    | { type: 'add'; payload: string }
+    | { type: 'remove'; payload: number }
+    | { type: 'done'; payload: number };
+
+
 const SingleTodo = ({ todo, todos, setTodos }: Props) => {
 
     const [edit, setEdit] = useState<boolean>(false);
     const [editTodo, setEditTodo] = useState<string>(todo.todo);
 
     const handleDone = (id: number) => {
-        setTodos(todos.map((todo) => todo.id === id ? { ...todo, isDone: !todo.isDone } : todo));
+        dispatch({type: "done", payload: id});
+        
     };
 
     const handleDelete = (id: number) => {
@@ -32,12 +39,33 @@ const SingleTodo = ({ todo, todos, setTodos }: Props) => {
         setEdit(false);
     };
 
+    const TodoReducer = (state: Todo[], action: Actions) => {
+        switch (action.type) {
+            case "add":
+                return [
+                    ...state,
+                    { id: Date.now(), todo: action.payload, isDone: false }
+                ];
+            case "remove":
+                return state.filter((todo) => todo.id !== action.payload);
+            case "done":
+                return state.map((todo) =>
+                    todo.id !== action.payload ? { ...todo, isDone: false } : todo
+                );
+            default:
+                return state;
+        }
+    };
+
+    const [state, dispatch] = useReducer(TodoReducer, []);
+
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         inputRef.current?.focus();
     }, [edit]);
 
+    
 
     return (
         <form className="todos__single" onSubmit={(e)=>handleEdit(e, todo.id)}>
